@@ -2,6 +2,9 @@ import * as http from "http";
 import { networkInterfaces } from "os";
 import { readFile } from "fs/promises";
 import { exec } from "child_process";
+import { randomUUID } from "crypto";
+
+const SESSION = new Map();
 let uploadPassword;
 
 export function startServer(port, password) {
@@ -33,16 +36,32 @@ async function performLogin(req, res) {
   const formData = new URLSearchParams(body);
   const userPassword = formData.get("password");
   if (userPassword === uploadPassword) {
+    const sessionId = randomUUID();
+    const sessionExpiryDate = new Date(Date.now() + 5 * 60 * 1000);
+    SESSION.set(sessionId, sessionExpiryDate);
+    res.setHeader(
+      "Set-Cookie",
+      [
+        `session=${sessionId}`,
+        `Expires=${sessionExpiryDate.toISOString()}`,
+        'httpOnly'
+      ].join(";")
+    );
     res.statusCode = 302;
-    res.setHeader('Location', `${req.headers.referer}`);
-    res.end()
+    res.setHeader("Location", `${req.headers.referer}`);
+    res.end();
   } else {
     res.statusCode = 401;
-    res.end()
+    res.end();
   }
 }
 
 async function serveContent(req, res) {
-  const html = await readFile(new URL("./index.html", import.meta.url));
-  res.end(html);
+  const html = await readFile(new URL("./index.html", import.meta.url), {
+    encoding: "utf8",
+  });
+  const cspNonce = randomUUID();
+  res.setHeader("Content-Security-Policy", `script-src 'nonce-${cspNonce}'`);
+  res.write(html.replace("NONCE", cspNonce));
+  res.end();
 }
