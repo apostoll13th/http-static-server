@@ -8,6 +8,16 @@
   <title>Anakonda File Server</title>
 </head>
 <body>
+<details id="loginForm">
+  <summary> Login to Anakonda</summary>
+  <form action="/login" method="post">
+    <p>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password">
+    </p>
+    <p><input type="submit" name="Login" value="Login"></p>
+  </form>
+</details>
 <h1>Hello Server</h1>
 <script type="module">
   console.log(13)
